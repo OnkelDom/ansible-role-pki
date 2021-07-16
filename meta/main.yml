@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: pki
+  author: Dominik Lenhardt
+  description: Ansible role for installing and configuring PKI infrastructure
+  license: "MIT"
+  min_ansible_version: 2.5
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - bionic
+    - name: EL
+      versions:
+        - 8
+  galaxy_tags:
+  - system
+  - linux
+  - pki
+  - security
+  - certificate
+dependencies: []

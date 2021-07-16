@@ -1,0 +1,25 @@
+---
+- name: Include {{ pki_method }} CA variables
+  include_vars:
+    file: "{{ pki_method ~ '_ca.yml' }}"
+
+- name: Create PKI directories
+  file:
+    state: directory
+    path: "{{ item.path }}"
+    owner: "{{ item.owner | default(omit) }}"
+    mode: "{{ item.mode | default(omit) }}"
+  with_items:
+    - "{{ pki_ca_dirs }}"
+  delegate_to: "{{ pki_setup_host }}"
+  when: pki_create_ca | bool
+
+- name: Create certificate authorities
+  include_tasks: "{{ pki_method }}/create_ca.yml"
+  loop: "{{ pki_ca_defs }}"
+  loop_control:
+    loop_var: ca
+  vars:
+     ca_dir: "{{ pki_dir }}/roots/{{ ca.name }}"
+     ca_cert_prefix: "{{ ca_dir ~ '/certs/' ~ ca.name }}"
+  when: pki_create_ca | bool

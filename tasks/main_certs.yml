@@ -1,0 +1,48 @@
+---
+- name: Include {{ pki_method }} certificate variables
+  include_vars:
+    file: "{{ pki_method ~ '_cert.yml' }}"
+
+- name: Create certificate directories
+  file:
+    state: directory
+    path: "{{ item.path }}"
+    owner: "{{ item.owner | default(omit) }}"
+    mode: "{{ item.mode | default(omit) }}"
+  with_items:
+    - "{{ pki_cert_dirs }}"
+  when: pki_create_certificates | default(true)
+  delegate_to: "{{ pki_setup_host }}"
+  run_once: yes
+
+- name: Create Server certificates
+  include_tasks: "{{ pki_method }}/create_cert.yml"
+  loop: "{{ pki_cert_defs }}"
+  loop_control:
+    loop_var: cert
+  vars:
+     cert_dir: "{{ pki_dir }}/certs"
+  when:
+    - pki_create_certificates | default(true)
+
+- name: Slurp up server certificates from pki setup host ({{ pki_setup_host }})
+  delegate_to: "{{ pki_setup_host }}"
+  slurp:
+    src: "{{ item.src }}"
+  register: _cert_slurp
+  run_once: true
+  loop: "{{ pki_install_certificates | default([]) }}"
+
+- name: Install Server certificates to targets
+  copy:
+    content: "{{ install.content | b64decode }}"
+    dest: "{{ install.item.dest }}"
+    owner: "{{ install.item.owner | default(omit) }}"
+    group: "{{ install.item.group | default(omit) }}"
+    mode: "0644"
+  loop: "{{ _cert_slurp.results }}"
+  loop_control:
+    loop_var: install
+  no_log: true
+  notify:
+    - cert installed
